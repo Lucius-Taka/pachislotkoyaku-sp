@@ -1,1 +1,0 @@
-# pachislotkoyaku-sp
