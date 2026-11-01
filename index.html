@@ -1,0 +1,797 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>小役確率逆算ツール</title>
+
+    <!-- === iOSアプリ化（PWA）用の設定 === -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="小役逆算ツール">
+    
+    <!-- ホーム画面用アイコン -->
+    <link rel="apple-touch-icon" href="icon.png">
+
+    <style>
+        html, body {
+            background: #f2f2f7;
+            margin: 0;
+            padding: 6px;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            -webkit-text-size-adjust: 100%;
+        }
+        .box {
+            background: white;
+            padding: 11px 12px 12px 12px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            max-width: 360px;
+            margin: 0 auto;
+            box-sizing: border-box;
+            transform: translateZ(0);
+            -webkit-transform: translateZ(0);
+            will-change: transform;
+            position: relative;
+        }
+        
+        h3 {
+            text-align: center;
+            margin: 0 0 7px 0;
+            color: #1c1c1e;
+            font-size: 14px;
+        }
+        
+        .reset-all-btn {
+            position: absolute;
+            top: 7px;
+            right: 8px;
+            width: 26px;
+            height: 26px;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 15px;
+            font-weight: bold;
+            color: #48484a;
+            background: #fdf6f6;
+            border: 1px solid #e5b8b7;
+            border-radius: 50%;
+            cursor: pointer;
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-user-select: none;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+            line-height: 1;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .reset-all-btn:active {
+            background: #f8e8e8;
+            border-color: #d9534f;
+            transform: scale(0.95);
+        }
+
+        /* 台番・機種セレクター部分のスタイル */
+        .dai-selector-wrap {
+            margin-bottom: 8px;
+            background: #e3e3e8;
+            padding: 4px;
+            border-radius: 8px;
+        }
+        .dai-label {
+            font-size: 11px;
+            font-weight: bold;
+            color: #555;
+            text-align: center;
+            margin-bottom: 3px;
+        }
+        .dai-selector {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 4px;
+        }
+        .dai-btn {
+            padding: 5px 0;
+            border: none;
+            background: #f2f2f7;
+            font-size: 11px;
+            font-weight: bold;
+            color: #333;
+            border-radius: 6px;
+            cursor: pointer;
+            text-align: center;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .dai-btn.active {
+            background: #007aff;
+            color: white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+        }
+        .dai-subinfo {
+            font-size: 11px;
+            color: #3a3a3c;
+            text-align: center;
+            margin-top: 5px;
+            font-weight: bold;
+        }
+        
+        .row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+        .row:last-of-type { margin-bottom: 0; }
+        
+        /* 元の適切なラベルと入力エリアの幅比率に戻す */
+        label { font-size: 13px; color: #3a3a3c; font-weight: 600; width: 40%; }
+        .input-area { width: 60%; }
+        
+        .input-group {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            width: 100%;
+        }
+        .input-group input {
+            flex: 1;
+            min-width: 0;
+            height: 30px;
+            padding: 5px 8px;
+            font-size: 15px;
+            border: 1px solid #c7c7cc;
+            border-radius: 6px;
+            box-sizing: border-box;
+            text-align: right;
+            -webkit-appearance: none;
+        }
+        
+        .ctrl-btn {
+            height: 30px;
+            width: 32px;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: bold;
+            color: #48484a;
+            background: #f2f2f7;
+            border: 1px solid #c7c7cc;
+            border-radius: 6px;
+            cursor: pointer;
+            box-sizing: border-box;
+            flex-shrink: 0;
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .ctrl-btn:active { background: #e5e5ea; color: #000; border-color: #a1a1a6; }
+
+        button.calc-btn { 
+            width: 100%; 
+            height: 38px;
+            padding: 0; 
+            background: #34c759; 
+            color: white; 
+            border: none; 
+            border-radius: 8px; 
+            font-size: 14px; 
+            font-weight: bold; 
+            margin-top: 8px; 
+            cursor: pointer; 
+            box-sizing: border-box;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        #res { 
+            margin-top: 8px; 
+            height: 38px;
+            padding: 0 4px; 
+            background: #f2f2f7; 
+            border-radius: 8px; 
+            box-sizing: border-box;
+            display: none; 
+            align-items: center;
+            justify-content: center;
+        }
+
+        .res-container {
+            display: flex;
+            align-items: center;
+            width: 100%;
+        }
+        .res-side {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+        }
+        .res-divider {
+            width: 1px;
+            height: 20px;
+            background: #c7c7cc;
+        }
+
+        /* 小数点第3位のみのサイズ（0.78emに指定） */
+        .small-digit {
+            font-size: 0.78em;
+            margin-left: 1px;
+            vertical-align: baseline;
+        }
+
+        /* === テーブルレイアウト === */
+        .table-container {
+            width: 100%;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            margin-top: 8px;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            background: white;
+            border: 1px solid #e5e5ea;
+        }
+        .info-table {
+            width: max-content;
+            border-collapse: collapse;
+            font-size: 11px;
+            background: transparent;
+            white-space: nowrap;
+        }
+        .info-table th, .info-table td {
+            padding: 6px 1px;
+            text-align: center;
+            border-bottom: 1px solid #e5e5ea;
+            font-weight: bold;
+            box-sizing: border-box;
+        }
+
+        /* 各列の幅設定 */
+        .info-table th:nth-child(1), .info-table td:nth-child(1) { width: 32px; min-width: 32px; padding: 6px 0px; } /* 設定 */
+        .info-table th:nth-child(2), .info-table td:nth-child(2) { width: 52px; min-width: 52px; padding: 6px 0px 6px 2px; } /* BIG */
+        .info-table th:nth-child(3), .info-table td:nth-child(3) { width: 52px; min-width: 52px; padding: 6px 0px 6px 2px; } /* REG */
+        .info-table th:nth-child(4), .info-table td:nth-child(4) { width: 52px; min-width: 52px; padding: 6px 0px 6px 2px; } /* 合算 */
+        .info-table th:nth-child(5), .info-table td:nth-child(5) { width: 52px; min-width: 52px; padding: 6px 1px; } /* ぶどう/小役/ベル */
+        .info-table th:nth-child(6), .info-table td:nth-child(6) { width: 52px; min-width: 52px; padding: 6px 2px 6px 0px; } /* 機械割 */
+
+        /* 7列目以降 */
+        .info-table th:nth-child(n+7), .info-table td:nth-child(n+7) { width: 60px; min-width: 60px; }
+
+        .info-table th {
+            background: #2c2c2e;
+            color: white;
+        }
+        .info-table td {
+            color: #000;
+        }
+        .info-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        /* 1番左の「設定」列を固定 */
+        .info-table th:first-child,
+        .info-table td:first-child {
+            position: sticky;
+            left: 0;
+            z-index: 3;
+        }
+        .info-table th:first-child {
+            background: #2c2c2e !important;
+        }
+        .info-table td:first-child {
+            background: #f2f2f7 !important;
+        }
+    </style>
+</head>
+<body>
+<div class="box">
+    <h3>小役確率逆算ツール</h3>
+    <button class="reset-all-btn" onclick="resetAll()" title="この台の数値をリセット">↻</button>
+    
+    <!-- 台番選択セレクター -->
+    <div class="dai-selector-wrap">
+        <div class="dai-label">台番を選択</div>
+        <div class="dai-selector">
+            <button id="dai_201" class="dai-btn" onclick="selectDai('201')">201</button>
+            <button id="dai_202" class="dai-btn" onclick="selectDai('202')">202</button>
+            <button id="dai_203" class="dai-btn" onclick="selectDai('203')">203</button>
+            <button id="dai_204" class="dai-btn" onclick="selectDai('204')">204</button>
+            <button id="dai_205" class="dai-btn" onclick="selectDai('205')">205</button>
+            <button id="dai_206" class="dai-btn" onclick="selectDai('206')">206</button>
+            <button id="dai_207" class="dai-btn" onclick="selectDai('207')">207</button>
+            <button id="dai_208" class="dai-btn" onclick="selectDai('208')">208</button>
+            <button id="dai_209" class="dai-btn" onclick="selectDai('209')">209</button>
+            <button id="dai_210" class="dai-btn" onclick="selectDai('210')">210</button>
+            <button id="dai_211" class="dai-btn" onclick="selectDai('211')">211</button>
+            <button id="dai_212" class="dai-btn" onclick="selectDai('212')">212</button>
+            <button id="dai_213" class="dai-btn" onclick="selectDai('213')">213</button>
+            <button id="dai_214" class="dai-btn" onclick="selectDai('214')">214</button>
+            <button id="dai_215" class="dai-btn" onclick="selectDai('215')">215</button>
+            <button id="dai_216" class="dai-btn" onclick="selectDai('216')">216</button>
+            <button id="dai_217" class="dai-btn" onclick="selectDai('217')">217</button>
+            <button id="dai_218" class="dai-btn" onclick="selectDai('218')">218</button>
+            <button id="dai_219" class="dai-btn" onclick="selectDai('219')">219</button>
+            <button id="dai_220" class="dai-btn" onclick="selectDai('220')">220</button>
+        </div>
+        <div id="dai_info" class="dai-subinfo">＜ マイジャグラー ＞</div>
+    </div>
+
+    <div class="row">
+        <label>通常回転数</label>
+        <div class="input-area">
+            <div class="input-group">
+                <input type="number" id="g" placeholder="0" oninput="saveState()">
+                <button class="ctrl-btn" onclick="clearField('g')" title="クリア">C</button>
+            </div>
+        </div>
+    </div>
+    <div class="row">
+        <label>BIG回数</label>
+        <div class="input-area">
+            <div class="input-group">
+                <button class="ctrl-btn" onclick="adjustCount('big', -1)" title="マイナス">−</button>
+                <input type="number" id="big" placeholder="0" oninput="saveState()">
+                <button class="ctrl-btn" onclick="adjustCount('big', 1)" title="プラス">＋</button>
+            </div>
+        </div>
+    </div>
+    <div class="row">
+        <label>REG回数</label>
+        <div class="input-area">
+            <div class="input-group">
+                <button class="ctrl-btn" onclick="adjustCount('reg', -1)" title="マイナス">−</button>
+                <input type="number" id="reg" placeholder="0" oninput="saveState()">
+                <button class="ctrl-btn" onclick="adjustCount('reg', 1)" title="プラス">＋</button>
+            </div>
+        </div>
+    </div>
+    <div class="row">
+        <label>現在の差枚数</label>
+        <div class="input-area">
+            <div class="input-group">
+                <input type="number" id="samai" placeholder="0" oninput="saveState()">
+                <button class="ctrl-btn" onclick="clearField('samai')" title="クリア">C</button>
+            </div>
+        </div>
+    </div>
+    <button class="calc-btn" onclick="calc()">確率を計算する</button>
+    
+    <div id="res"></div>
+
+    <!-- 横スクロール解析表 -->
+    <div class="table-container" id="scroll_box">
+        <table class="info-table" id="target_table"></table>
+    </div>
+</div>
+
+<script>
+/* 台番と機種の紐付け定義 */
+const daiToModel = {
+    '201': 'my', '202': 'my', '203': 'my', '204': 'my', '205': 'my', '206': 'my',
+    '207': 'im', '208': 'im', '209': 'im', '210': 'im', '211': 'im',
+    '212': 'gogo', '213': 'gogo', '214': 'gogo',
+    '215': 'funky', '216': 'funky', '217': 'funky', '218': 'funky', '219': 'funky',
+    '220': 'mr'
+};
+
+const modelNames = {
+    'my': 'マイジャグラー',
+    'im': 'アイムジャグラー',
+    'gogo': 'ゴーゴージャグラー',
+    'funky': 'ファンキージャグラー',
+    'mr': 'ミスタージャグラー'
+};
+
+let currentDai = '201';
+let currentModel = 'my';
+
+/* 機種別解析データ */
+const modelData = {
+    im: {
+        b:        ['273.1', '269.7', '269.7', '259.0', '259.0', '255.0'],
+        r:        ['439.8', '399.6', '331.0', '315.1', '255.0', '255.0'],
+        g:        ['168.5', '161.0', '148.6', '142.2', '128.5', '127.5'],
+        grape:    ['6.02',  '6.02',  '6.02',  '6.02',  '6.02',  '5.78' ],
+        w:        ['97.0%', '98.0%', '99.5%', '101.1%','103.3%','105.5%'],
+        wCherry:  ['97.97%','99.09%','100.75%','102.53%','104.93%','107.29%'],
+        wPerfect: ['98.70%','99.82%','101.48%','103.27%','105.66%','108.01%'],
+        soloB:    ['431.2', '422.8', '422.8', '417.4', '417.4', '407.1'],
+        soloR:    ['630.2', '574.9', '474.9', '448.9', '364.1', '364.1'],
+        cheB:     ['1129.9','1129.9','1129.9','1092.3','1092.3','1092.3'],
+        cheR:     ['1456.4','1310.7','1092.3','1057.0','851.1', '851.1'],
+        rareCheB: ['2184.5','2184.5','2184.5','1820.4','1820.4','1820.4'],
+        midCheB:  ['6553.6','6553.6','6553.6','5461.3','5461.3','5461.3'],
+        cherry:   ['35.8',  '35.8',  '35.8',  '35.8',  '35.8',  '35.8' ],
+        pierrot:  ['1092.3','1092.3','1092.3','1092.3','1092.3','1092.3'],
+        bell:     ['1092.3','1092.3','1092.3','1092.3','1092.3','1092.3']
+    },
+    funky: {
+        b:        ['266.4', '259.0', '256.0', '249.2', '240.1', '219.9'],
+        r:        ['439.8', '407.1', '366.1', '322.8', '299.3', '262.1'],
+        g:        ['165.9', '158.3', '150.7', '140.6', '133.2', '119.6'],
+        grape:    ['5.94',  '5.92',  '5.88',  '5.83',  '5.76',  '5.66' ],
+        w:        ['97.0%', '98.5%', '99.8%', '102.0%', '104.3%', '109.0%'],
+        wCherry:  ['97.83%','99.36%','100.99%','103.40%','106.04%','111.35%'],
+        wPerfect: ['98.57%','100.08%','101.72%','104.14%','106.78%','112.08%'],
+        soloB:    ['404.5', '397.2', '394.8', '383.3', '374.5', '334.4'],
+        soloR:    ['636.3', '574.9', '512.0', '448.9', '409.6', '356.2'],
+        cheB:     ['1424.7','1365.3','1365.3','1365.3','1285.0','1260.3'],
+        cheR:     ['1424.7','1394.4','1285.0','1149.8','1110.8','993.0' ],
+        rareCheB: ['1724.6','1638.4','1560.4','1489.5','1394.4','1310.7'],
+        midCheB:  ['16384.0','16384.0','16384.0','16384.0','10923.0','10923.0'],
+        cherry:   ['35.6',  '35.6',  '35.6',  '35.6',  '35.6',  '35.6' ],
+        pierrot:  ['1092.3','1092.3','1092.3','1092.3','1092.3','1092.3'],
+        bell:     ['1092.3','1092.3','1092.3','1092.3','1092.3','1092.3']
+    },
+    my: {
+        b:        ['273.1', '270.8', '266.4', '254.0', '240.1', '229.1'],
+        r:        ['409.6', '385.5', '336.1', '290.0', '268.6', '229.1'],
+        g:        ['163.8', '159.1', '148.6', '135.4', '126.8', '114.6'],
+        grape:    ['5.90',  '5.85',  '5.80',  '5.78',  '5.76',  '5.66' ],
+        w:        ['97.0%', '98.0%', '99.9%', '102.8%', '105.3%', '109.4%'],
+        wCherry:  ['97.83%','98.95%','101.19%','104.31%','107.19%','111.65%'],
+        wPerfect: ['98.61%','99.73%','101.97%','105.09%','107.97%','112.44%'],
+        soloB:    ['409.6', '407.1', '399.6', '378.8', '354.3', '337.8'],
+        soloR:    ['655.4', '601.3', '492.8', '407.1', '390.1', '327.7'],
+        cheB:     ['1424.7','1394.4','1365.3','1285.0','1213.6','1129.9'],
+        cheR:     ['1092.3','1074.4','1057.0','1008.3','862.3', '762.1' ],
+        rareCheB: ['1927.5','1927.5','1927.5','1927.5','1927.5','1927.5'],
+        midCheB:  ['3276.8','3276.8','3276.8','3276.8','3276.8','3276.8'],
+        cherry:   ['38.1',  '38.1',  '36.8',  '35.6',  '35.6',  '35.6' ],
+        pierrot:  ['1024.0','1024.0','1024.0','1024.0','1024.0','1024.0'],
+        bell:     ['1024.0','1024.0','1024.0','1024.0','1024.0','1024.0']
+    },
+    gogo: {
+        b:        ['259.0', '258.0', '257.0', '254.0', '247.3', '234.9'],
+        r:        ['354.2', '332.7', '306.2', '268.6', '247.3', '234.9'],
+        g:        ['149.6', '145.3', '139.7', '130.5', '123.7', '117.4'],
+        grape:    ['6.25',  '6.20',  '6.15',  '6.07',  '6.00',  '5.92' ],
+        w:        ['97.2%', '98.2%', '99.4%', '101.6%','103.8%','106.5%'],
+        wCherry:  ['98.39%','99.36%','100.60%','102.83%','105.08%','107.83%'],
+        wPerfect: ['99.08%','100.05%','101.29%','103.51%','105.76%','108.51%'],
+        soloB:    ['377.3', '376.5', '376.6', '375.9', '369.6', '352.3'],
+        soloR:    ['478.4', '445.8', '412.1', '360.5', '332.2', '316.3'],
+        cheB:     ['1337.5','1337.5','1337.5','1310.7','1310.7','1260.3'],
+        cheR:     ['1365.3','1310.4','1191.6','1057.0','964.3', '910.2' ],
+        rareCheB: ['3276.8','3276.8','3276.8','2978.9','2730.7','2520.6'],
+        oneCoinB: ['6553.6','5957.8','5461.3','5041.2','4681.1','4369.1'],
+        cherry:   ['33.6',  '33.6',  '33.6',  '33.6',  '33.6',  '33.6' ],
+        pierrot:  ['1092.3','1092.3','1092.3','1092.3','1092.3','1092.3'],
+        bell:     ['1092.3','1092.3','1092.3','1092.3','1092.3','1092.3']
+    },
+    mr: {
+        b:        ['268.6', '267.5', '260.1', '249.2', '240.9', '237.4'],
+        r:        ['374.5', '354.2', '331.0', '291.3', '257.0', '237.4'],
+        g:        ['156.4', '152.4', '145.6', '134.3', '124.4', '118.7'],
+        grape:    ['6.29',  '6.22',  '6.15',  '6.09',  '6.02',  '5.96' ],
+        w:        ['97.0%', '98.0%', '99.8%', '102.7%','105.5%','107.3%'],
+        wCherry:  ['98.09%','99.11%','100.96%','103.84%','106.69%','108.49%'],
+        wPerfect: ['99.50%','100.52%','102.37%','105.24%','108.09%','109.89%'],
+        soloB:    ['315.1', '312.1', '300.6', '292.6', '284.9', '282.5'],
+        soloR:    ['485.5', '458.3', '420.1', '368.2', '319.7', '290.0'],
+        cheB:     ['1724.6','1680.4','1638.4','1524.1','1424.7','1394.4'],
+        cheR:     ['1638.4','1598.4','1560.4','1456.4','1365.3','1337.5'],
+        oneCoinB: ['789.9', '704.8', '574.8', '461.6', '374.4', '331.0'],
+        oneCoinR: ['1873.2','1524.2','1170.3','840.3', '624.2', '520.2' ],
+        pierRate: ['1680.4','1680.4','1680.4','1680.4','1680.4','1680.4'],
+        cherry:   ['37.2',  '37.2',  '37.2',  '37.2',  '37.2',  '37.2' ],
+        pierrot:  ['420.1', '420.1', '420.1', '420.1', '420.1', '420.1'],
+        bell:     ['655.4', '655.4', '655.4', '655.4', '655.4', '655.4']
+    }
+};
+
+/* 機種別パラメータ設定 */
+const modelSpecs = {
+    im:      { cherry: 35.82,  rep: 7.298, bigNet: 252, freeCherry: 1.29 },
+    funky:   { cherry: 35.62,  rep: 7.298, bigNet: 240, freeCherry: 1.39 },
+    my:      { cherry: 37.25,  rep: 7.298, bigNet: 240, freeCherry: 1.40 },
+    gogo:    { cherry: 33.32,  rep: 7.298, bigNet: 240, freeCherry: 1.00 },
+    mr:      { cherry: 36.88,  rep: 7.298, bigNet: 240, freeCherry: 0.0, mrFreeRate: 0.01604 }
+};
+
+/* 台番ごとに数値を独立して保存・復元する処理 */
+function saveState() {
+    const allDaiData = JSON.parse(localStorage.getItem('slot_calc_all_dai_states') || '{}');
+    allDaiData[currentDai] = {
+        g: document.getElementById('g').value,
+        big: document.getElementById('big').value,
+        reg: document.getElementById('reg').value,
+        samai: document.getElementById('samai').value
+    };
+    localStorage.setItem('slot_calc_all_dai_states', JSON.stringify(allDaiData));
+    localStorage.setItem('slot_calc_last_dai', currentDai);
+}
+
+function loadState() {
+    const lastDai = localStorage.getItem('slot_calc_last_dai');
+    if (lastDai && daiToModel[lastDai]) {
+        currentDai = lastDai;
+    }
+    
+    currentModel = daiToModel[currentDai];
+    
+    document.querySelectorAll('.dai-btn').forEach(btn => btn.classList.remove('active'));
+    const targetBtn = document.getElementById('dai_' + currentDai);
+    if (targetBtn) targetBtn.classList.add('active');
+
+    document.getElementById('dai_info').innerText = '＜ ' + modelNames[currentModel] + ' ＞';
+
+    applyDaiValues(currentDai);
+    updateTable(currentModel);
+    
+    const G = parseFloat(document.getElementById('g').value) || 0;
+    if (G > 0) calc();
+}
+
+function applyDaiValues(dai) {
+    const allDaiData = JSON.parse(localStorage.getItem('slot_calc_all_dai_states') || '{}');
+    const daiState = allDaiData[dai] || { g: '', big: '', reg: '', samai: '' };
+    
+    document.getElementById('g').value = daiState.g;
+    document.getElementById('big').value = daiState.big;
+    document.getElementById('reg').value = daiState.reg;
+    document.getElementById('samai').value = daiState.samai;
+    
+    const resDiv = document.getElementById('res');
+    if (resDiv) {
+        resDiv.style.display = 'none';
+        resDiv.innerHTML = '';
+    }
+}
+
+/* 個別クリア処理 */
+function clearField(id) {
+    const el = document.getElementById(id);
+    if (el) {
+        el.value = '';
+        saveState();
+    }
+}
+
+/* 現在選択中の台の数値をリセット */
+function resetAll() {
+    document.getElementById('g').value = '';
+    document.getElementById('big').value = '';
+    document.getElementById('reg').value = '';
+    document.getElementById('samai').value = '';
+    const resDiv = document.getElementById('res');
+    if (resDiv) {
+        resDiv.style.display = 'none';
+        resDiv.innerHTML = '';
+    }
+    saveState();
+}
+
+function adjustCount(id, delta) {
+    const el = document.getElementById(id);
+    if (el) {
+        let val = parseInt(el.value, 10) || 0;
+        val += delta;
+        if (val < 0) val = 0;
+        el.value = val > 0 ? val : '';
+        saveState();
+    }
+}
+
+function updateTable(model) {
+    const data = modelData[model];
+    const table = document.getElementById('target_table');
+    if (!table || !data) return;
+
+    let colName = 'ぶどう';
+
+    const isAllSame = (arr) => {
+        if (!arr || !arr.length) return false;
+        const valid = arr.filter(v => v !== '---' && v !== '-' && v !== '?');
+        return valid.length > 0 && valid.every(v => v === valid[0]);
+    };
+
+    const formatVal = (arr, idx) => {
+        if (!arr || arr[idx] === undefined) return '-';
+        const val = arr[idx];
+        if (val === '---' || val === '-' || val === '?') return val;
+        if (val.includes('%')) return val;
+        if (val.endsWith('?')) {
+            return '1/' + val.slice(0, -1) + '?';
+        }
+        return '1/' + val;
+    };
+
+    let html = '';
+
+    if (model === 'mr') {
+        html = `
+            <tr>
+                <th>設定</th><th>BIG</th><th>REG</th><th>合算</th><th>${colName}</th><th>機械割</th>
+                <th>チェ狙い</th><th>完全攻略</th><th>単+1B</th><th>単+1R</th><th>チェ重B</th><th>チェ重R</th>
+                <th>(1枚合B)</th><th>(1枚合R)</th><th>ピ重合算</th><th>チェリー</th><th>ピエロ</th><th>ベル</th>
+            </tr>
+        `;
+        for(let i = 0; i < 6; i++) {
+            let n = (i + 1);
+            html += `
+                <tr>
+                    <td>${n}</td>
+                    <td>1/${data.b[i]}</td>
+                    <td>1/${data.r[i]}</td>
+                    <td>1/${data.g[i]}</td>
+                    <td>1/${data.grape[i]}</td>
+                    <td>${data.w[i]}</td>
+                    <td>${data.wCherry[i]}</td>
+                    <td>${data.wPerfect[i]}</td>
+                    <td>${formatVal(data.soloB, i)}</td>
+                    <td>${formatVal(data.soloR, i)}</td>
+                    <td>${formatVal(data.cheB, i)}</td>
+                    <td>${formatVal(data.cheR, i)}</td>
+                    <td>${formatVal(data.oneCoinB, i)}</td>
+                    <td>${formatVal(data.oneCoinR, i)}</td>
+                    <td>${formatVal(data.pierRate, i)}</td>
+                    ${i === 0 && isAllSame(data.cherry) ? `<td rowspan="6">${formatVal(data.cherry, 0)}</td>` : (!isAllSame(data.cherry) ? `<td>${formatVal(data.cherry, i)}</td>` : '')}
+                    ${i === 0 && isAllSame(data.pierrot) ? `<td rowspan="6">${formatVal(data.pierrot, 0)}</td>` : (!isAllSame(data.pierrot) ? `<td>${formatVal(data.pierrot, i)}</td>` : '')}
+                    ${i === 0 && isAllSame(data.bell) ? `<td rowspan="6">${formatVal(data.bell, 0)}</td>` : (!isAllSame(data.bell) ? `<td>${formatVal(data.bell, i)}</td>` : '')}
+                </tr>
+            `;
+        }
+    } else if (model === 'gogo') {
+        html = `
+            <tr>
+                <th>設定</th><th>BIG</th><th>REG</th><th>合算</th><th>${colName}</th><th>機械割</th>
+                <th>チェ狙い</th><th>完全攻略</th><th>単独B</th><th>単独R</th><th>チェ重B</th><th>チェ重R</th>
+                <th>レア重B</th><th>1枚役B</th><th>チェリー</th><th>ピエロ</th><th>ベル</th>
+            </tr>
+        `;
+
+        for(let i = 0; i < 6; i++) {
+            let n = (i + 1);
+            html += `
+                <tr>
+                    <td>${n}</td>
+                    <td>1/${data.b[i]}</td>
+                    <td>1/${data.r[i]}</td>
+                    <td>1/${data.g[i]}</td>
+                    <td>1/${data.grape[i]}</td>
+                    <td>${data.w[i]}</td>
+                    <td>${data.wCherry ? data.wCherry[i] : '-'}</td>
+                    <td>${data.wPerfect ? data.wPerfect[i] : '-'}</td>
+                    <td>${formatVal(data.soloB, i)}</td>
+                    <td>${formatVal(data.soloR, i)}</td>
+                    <td>${formatVal(data.cheB, i)}</td>
+                    <td>${formatVal(data.cheR, i)}</td>
+                    <td>${formatVal(data.rareCheB, i)}</td>
+                    <td>${formatVal(data.oneCoinB, i)}</td>
+                    ${i === 0 && isAllSame(data.cherry) ? `<td rowspan="6">${formatVal(data.cherry, 0)}</td>` : (!isAllSame(data.cherry) ? `<td>${formatVal(data.cherry, i)}</td>` : '')}
+                    ${i === 0 && isAllSame(data.pierrot) ? `<td rowspan="6">${formatVal(data.pierrot, 0)}</td>` : (!isAllSame(data.pierrot) ? `<td>${formatVal(data.pierrot, i)}</td>` : '')}
+                    ${i === 0 && isAllSame(data.bell) ? `<td rowspan="6">${formatVal(data.bell, 0)}</td>` : (!isAllSame(data.bell) ? `<td>${formatVal(data.bell, i)}</td>` : '')}
+                </tr>
+            `;
+        }
+    } else {
+        html = `
+            <tr>
+                <th>設定</th><th>BIG</th><th>REG</th><th>合算</th><th>${colName}</th><th>機械割</th>
+                <th>チェ狙い</th><th>完全攻略</th><th>単独B</th><th>単独R</th><th>チェ重B</th><th>チェ重R</th>
+                <th>レア重B</th><th>(中チェB)</th><th>チェリー</th><th>ピエロ</th><th>ベル</th>
+            </tr>
+        `;
+
+        for(let i = 0; i < 6; i++) {
+            let n = (i + 1);
+            html += `
+                <tr>
+                    <td>${n}</td>
+                    <td>1/${data.b[i]}</td>
+                    <td>1/${data.r[i]}</td>
+                    <td>1/${data.g[i]}</td>
+                    <td>1/${data.grape[i]}</td>
+                    <td>${data.w[i]}</td>
+                    <td>${data.wCherry ? data.wCherry[i] : '-'}</td>
+                    <td>${data.wPerfect ? data.wPerfect[i] : '-'}</td>
+                    <td>${formatVal(data.soloB, i)}</td>
+                    <td>${formatVal(data.soloR, i)}</td>
+                    <td>${formatVal(data.cheB, i)}</td>
+                    <td>${formatVal(data.cheR, i)}</td>
+                    <td>${formatVal(data.rareCheB, i)}</td>
+                    <td>${formatVal(data.midCheB, i)}</td>
+                    ${i === 0 && isAllSame(data.cherry) ? `<td rowspan="6">${formatVal(data.cherry, 0)}</td>` : (!isAllSame(data.cherry) ? `<td>${formatVal(data.cherry, i)}</td>` : '')}
+                    ${i === 0 && isAllSame(data.pierrot) ? `<td rowspan="6">${formatVal(data.pierrot, 0)}</td>` : (!isAllSame(data.pierrot) ? `<td>${formatVal(data.pierrot, i)}</td>` : '')}
+                    ${i === 0 && isAllSame(data.bell) ? `<td rowspan="6">${formatVal(data.bell, 0)}</td>` : (!isAllSame(data.bell) ? `<td>${formatVal(data.bell, i)}</td>` : '')}
+                </tr>
+            `;
+        }
+    }
+
+    table.innerHTML = html;
+
+    const scrollBox = document.getElementById('scroll_box');
+    if (scrollBox) {
+        scrollBox.scrollLeft = 0;
+    }
+}
+
+function selectDai(dai) {
+    currentDai = dai;
+    currentModel = daiToModel[dai];
+
+    document.querySelectorAll('.dai-btn').forEach(btn => btn.classList.remove('active'));
+    const targetBtn = document.getElementById('dai_' + dai);
+    if (targetBtn) targetBtn.classList.add('active');
+
+    document.getElementById('dai_info').innerText = '＜ ' + modelNames[currentModel] + ' ＞';
+    
+    applyDaiValues(dai);
+    updateTable(currentModel);
+    saveState();
+    
+    const G = parseFloat(document.getElementById('g').value) || 0;
+    if (G > 0) calc();
+}
+
+/* 小数点第4位で四捨五入し、第3位のみを小さく表示するフォーマット関数 */
+function formatResultValue(val) {
+    const rounded = (Math.round((val + Number.EPSILON) * 1000) / 1000).toFixed(3);
+    const parts = rounded.split('.');
+    if (parts.length > 1 && parts[1].length === 3) {
+        const intAndDec2 = parts[0] + '.' + parts[1].slice(0, 2);
+        const dec3 = parts[1].slice(2);
+        return `${intAndDec2}<span class="small-digit">${dec3}</span>`;
+    }
+    return rounded;
+}
+
+function calc() {
+    const G = parseFloat(document.getElementById('g').value) || 0;
+    const BIG = parseFloat(document.getElementById('big').value) || 0;
+    const REG = parseFloat(document.getElementById('reg').value) || 0;
+    const samai = parseFloat(document.getElementById('samai').value) || 0;
+    const resDiv = document.getElementById('res');
+    
+    if (G <= 0) { return; }
+
+    resDiv.style.display = 'flex';
+
+    if (modelSpecs[currentModel] !== undefined) {
+        const spec = modelSpecs[currentModel];
+        const totalOut = G * 3 + samai;
+        const bonusGain = (BIG * spec.bigNet) + (REG * 96);
+        const repGain = (G / spec.rep) * 3;
+
+        let extraGain = 0;
+        if (currentModel === 'mr') {
+            extraGain = G * 0.0968;
+        }
+
+        const cherryGainFull = (G / spec.cherry) * 2;
+        const grapeCountFull = (totalOut - bonusGain - repGain - cherryGainFull - extraGain) / 8;
+        const probFull = G / grapeCountFull;
+
+        const mrAdjustment = (spec.mrFreeRate !== undefined) ? (G * spec.mrFreeRate) : 0;
+        const freeFactor = (spec.freeCherry !== undefined) ? spec.freeCherry : 1.0;
+        const cherryGainFree = (G / spec.cherry) * freeFactor;
+        const grapeCountHalf = (totalOut - bonusGain - repGain - cherryGainFree - extraGain + mrAdjustment) / 8;
+        const probHalf = G / grapeCountHalf;
+
+        if (probFull > 0 && isFinite(probFull)) {
+            resDiv.innerHTML = `
+                <div class="res-container">
+                    <div class="res-side">
+                        <span style="font-size: 10px; font-weight: 600; color: #555;">チェリー狙い</span>
+                        <span style="font-size: 18px; font-weight: 600; color: #000;">1 / ${formatResultValue(probFull)}</span>
+                    </div>
+                    <div class="res-divider"></div>
+                    <div class="res-side">
+                        <span style="font-size: 10px; font-weight: 600; color: #555;">フリー打ち</span>
+                        <span style="font-size: 18px; font-weight: 600; color: #000;">1 / ${formatResultValue(probHalf)}</span>
+                    </div>
+                </div>
+            `;
+        } else {
+            resDiv.innerText = '数値を正しく入力してください';
+        }
+    }
+    saveState();
+}
+
+window.addEventListener('DOMContentLoaded', loadState);
+</script>
+</body>
+</html>
