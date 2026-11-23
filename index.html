@@ -325,7 +325,7 @@
         <div class="dai-selector" id="dai_buttons_container">
             <!-- 動的にJSで描画されます -->
         </div>
-        <div id="dai_info" class="dai-subinfo">＜ マイジャグラー ＞</div>
+        <div id="dai_info" class="dai-subinfo">マイジャグラー</div>
     </div>
 
     <div class="row">
@@ -606,7 +606,7 @@ function loadState() {
     renderDaiButtons();
 
     currentModel = daiToModel[currentDai];
-    document.getElementById('dai_info').innerText = '＜ ' + modelNames[currentModel] + ' ＞';
+    document.getElementById('dai_info').innerText = modelNames[currentModel];
 
     applyDaiValues(currentDai);
     updateTable(currentModel);
@@ -860,7 +860,7 @@ function selectDai(dai) {
 
     renderDaiButtons();
 
-    document.getElementById('dai_info').innerText = '＜ ' + modelNames[currentModel] + ' ＞';
+    document.getElementById('dai_info').innerText = modelNames[currentModel];
     
     applyDaiValues(dai);
     updateTable(currentModel);
